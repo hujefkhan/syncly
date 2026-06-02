@@ -18,6 +18,7 @@ import storyRoutes from './routes/story.routes.js';
 import { errorHandler, notFound } from './middleware/error.middleware.js';
 
 const app = express();
+app.set("trust proxy", 1);
 
 app.use(helmet());
 app.use(
