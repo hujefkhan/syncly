@@ -1,0 +1,16 @@
+import { Router } from 'express';
+import * as c from '../controllers/post.controller.js';
+import { protect } from '../middleware/auth.middleware.js';
+import { upload } from '../middleware/upload.middleware.js';
+const r = Router();
+r.get('/feed/following', protect, c.followingFeed);
+r.get('/feed/foryou', protect, c.forYouFeed);
+r.get('/explore', protect, c.explore);
+r.get('/user/:userId', protect, c.userPosts);
+r.post('/', protect, upload.array('images', 4), c.createPost);
+r.get('/:id', c.getPost);
+r.patch('/:id', protect, c.updatePost);
+r.delete('/:id', protect, c.deletePost);
+r.post('/:id/like', protect, c.toggleLike);
+r.post('/:id/share', protect, c.sharePost);
+export default r;

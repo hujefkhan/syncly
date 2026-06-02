@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import * as c from '../controllers/comment.controller.js';
+import { protect } from '../middleware/auth.middleware.js';
+const r = Router();
+r.get('/post/:postId', c.listComments);
+r.get('/:commentId/replies', c.listReplies);
+r.post('/post/:postId', protect, c.addComment);
+r.delete('/:id', protect, c.deleteComment);
+r.post('/:id/like', protect, c.toggleLikeComment);
+export default r;

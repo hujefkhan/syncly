@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #1f2937;
+  background: #faf9ff;
+}
+
+.dark body {
+  color: white;
+  background: #09090b;
+}
+@layer components {
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition active:scale-[0.98];
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-gradient text-white shadow-glow hover:shadow-soft;
+  }
+
+  .btn-outline {
+    @apply btn border border-brand-200 dark:border-zinc-700 text-brand-700 bg-white dark:bg-zinc-900 hover:bg-brand-50 dark:hover:bg-zinc-800;
+  }
+
+  .btn-ghost {
+    @apply btn text-ink dark:text-white hover:bg-brand-50 dark:hover:bg-zinc-800;
+  }
+
+  .card {
+    @apply bg-white dark:bg-zinc-900 rounded-2xl shadow-soft border border-brand-100/60 dark:border-zinc-800;
+  }
+
+  .input {
+    @apply w-full px-4 py-3 rounded-xl border border-brand-100 dark:border-zinc-700 bg-white dark:bg-zinc-900 dark:text-white focus:border-brand-400 focus:ring-4 focus:ring-brand-100 outline-none transition;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 dark:bg-zinc-800 text-brand-700 text-xs font-semibold;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink/70 dark:text-zinc-300 hover:bg-brand-50 dark:hover:bg-zinc-800 hover:text-brand-700 transition font-medium;
+  }
+
+  .nav-link.active {
+    @apply bg-brand-50 dark:bg-zinc-800 text-brand-700;
+  }
+
+}
+
+@keyframes storyProgress {
+
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: 100%;
+  }
+
+}
+
+.animate-story {
+
+  animation: storyProgress 5s linear forwards;
+
+}
+/* =========================
+   COZY BLUE THEME
+========================= */
+
+.theme-cozy body {
+  background: #eef5fc;
+}
+
+/* LIGHT MODE */
+
+.theme-cozy .card {
+  background: #f8fbff !important;
+  border-color: #d9e6f2 !important;
+}
+
+.theme-cozy .input {
+  background: #ffffff !important;
+  border-color: #d9e6f2 !important;
+}
+
+.theme-cozy .btn-primary {
+  background: linear-gradient(
+    135deg,
+    #93a0c6 0%,
+    #788ab2 100%
+  ) !important;
+}
+
+.theme-cozy .btn-outline {
+  border-color: #bad0e7 !important;
+  color: #4c587d !important;
+}
+
+.theme-cozy .chip {
+  background: #e8f0f8 !important;
+  color: #4c587d !important;
+}
+
+/* DARK MODE */
+
+.dark.theme-cozy body {
+  background: #0f1722 !important;
+}
+
+.dark.theme-cozy .card {
+  background: #16202d !important;
+  border-color: #243447 !important;
+}
+
+.dark.theme-cozy .input {
+  background: #1b2838 !important;
+  border-color: #243447 !important;
+  color: white !important;
+}
+
+.dark.theme-cozy .btn-primary {
+  background: linear-gradient(
+    135deg,
+    #6e88b7 0%,
+    #8ba7d8 100%
+  ) !important;
+}
+
+.dark.theme-cozy .btn-outline {
+  border-color: #35506d !important;
+  color: #c7d8ef !important;
+}
