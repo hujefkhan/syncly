@@ -199,11 +199,25 @@ const bannedUsers = await User.find({
 const bannedIds =
   bannedUsers.map(u => u._id);
 
+const privateUsers = await User.find({
+  isPrivate: true,
+  _id: {
+    $nin: [
+      req.user.id,
+      ...me.following
+    ]
+  }
+}).select('_id');
+
+const privateIds =
+  privateUsers.map(u => u._id);
+
 const posts = await Post.find({
   author: {
     $nin: [
       ...blockedIds,
-      ...bannedIds
+      ...bannedIds,
+      ...privateIds
     ]
   }
 })
@@ -248,10 +262,24 @@ const bannedUsers = await User.find({
 const bannedIds =
   bannedUsers.map(u => u._id);
 
+const privateUsers = await User.find({
+  isPrivate: true,
+  _id: {
+    $nin: [
+      req.user.id,
+      ...me.following
+    ]
+  }
+}).select('_id');
+
+const privateIds =
+  privateUsers.map(u => u._id);
+
 filter.author = {
   $nin: [
     ...blockedIds,
-    ...bannedIds
+    ...bannedIds,
+    ...privateIds
   ]
 };
 

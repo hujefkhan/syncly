@@ -16,7 +16,15 @@ const notifSchema = new mongoose.Schema({
 
   type: {
     type: String,
-    enum: ['like', 'comment', 'follow', 'mention', 'message' , 'tag'],
+   enum: [
+  'like',
+  'comment',
+  'follow',
+  'follow_request',
+  'mention',
+  'message',
+  'tag'
+],
     required: true,
   },
 

@@ -14,11 +14,24 @@ const userSchema = new mongoose.Schema({
   },
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  
+isPrivate: {
+  type: Boolean,
+  default: false
+},
+
+followRequests: [{
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'User'
+}],
+
   role: {
   type: String,
   enum: ['user', 'admin'],
   default: 'user'
 },
+
+
 
 isBanned: {
   type: Boolean,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
 import { useAuth } from '../store/auth';
@@ -8,17 +8,30 @@ export default function EditProfile() {
 
   const { user, setUser } = useAuth();
 
-  const [form, setForm] = useState({
-    fullName: user?.fullName || '',
-    bio: user?.bio || '',
-    socialLinks: user?.socialLinks || {},
+ const [form, setForm] = useState({
+  fullName: user?.fullName || '',
+  bio: user?.bio || '',
+  socialLinks: user?.socialLinks || {},
+  isPrivate: user?.isPrivate || false,
+});
+
+useEffect(() => {
+  if (!user) return;
+
+  setForm({
+    fullName: user.fullName || '',
+    bio: user.bio || '',
+    socialLinks: user.socialLinks || {},
+    isPrivate: user.isPrivate || false,
   });
+}, [user]);
 
   const [avatarFile, setAvatarFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
   const [username, setUsername] = useState(
   user?.username || ''
 );
+
 
 const [changingUsername, setChangingUsername] =
   useState(false);
@@ -92,7 +105,7 @@ if (coverFile) {
           avatar, cover
         }
       );
-
+    console.log(data.user);
       setUser(data.user);
 
       toast.success('Profile updated');
@@ -298,6 +311,34 @@ if (coverFile) {
         ))}
 
       </div>
+
+      <div className="flex items-center justify-between">
+  <div>
+    <h3 className="font-semibold">
+      Private Account
+    </h3>
+
+    <p className="text-sm text-zinc-500">
+      Only approved followers can see your posts.
+    </p>
+  </div>
+
+ <label className="relative inline-flex items-center cursor-pointer">
+  <input
+    type="checkbox"
+    className="sr-only peer"
+    checked={form.isPrivate}
+    onChange={(e) =>
+      setForm(f => ({
+        ...f,
+        isPrivate: e.target.checked
+      }))
+    }
+  />
+
+  <div className="w-12 h-6 bg-zinc-700 rounded-full peer peer-checked:bg-purple-600 transition-all after:content-[''] after:absolute after:left-[2px] after:top-[2px] after:bg-white after:h-5 after:w-5 after:rounded-full after:transition-all peer-checked:after:translate-x-6"></div>
+</label>
+</div>
 
       <button className="btn-primary">
         Save changes

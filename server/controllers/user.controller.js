@@ -46,13 +46,44 @@ if (
   });
 
 });
-
 export const updateProfile = asyncHandler(async (req, res) => {
-  const allowed = ['fullName','bio','avatar','cover','socialLinks'];
+
+  console.log("BODY:", req.body);
+
+  const allowed = [
+    'fullName',
+    'bio',
+    'avatar',
+    'cover',
+    'socialLinks',
+    'isPrivate'
+  ];
+
   const patch = {};
-  for (const k of allowed) if (k in req.body) patch[k] = req.body[k];
-  const user = await User.findByIdAndUpdate(req.user.id, patch, { new: true });
-  res.json({ success: true, user });
+
+  for (const k of allowed) {
+    if (k in req.body) {
+      patch[k] = req.body[k];
+    }
+  }
+
+  console.log("PATCH:", patch);
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    patch,
+    {
+      new: true,
+      runValidators: true
+    }
+  );
+
+  console.log("UPDATED USER:", user);
+
+  res.json({
+    success: true,
+    user
+  });
 });
 
 export const changeUsername = asyncHandler(async (req, res) => {
@@ -223,44 +254,204 @@ export const deleteAccount = asyncHandler(async (req, res) => {
 });
 
 
-
 export const followUser = asyncHandler(async (req, res) => {
-  
-  if (req.params.id === req.user.id) throw new ApiError(400, 'Cannot follow yourself');
+
+  if (req.params.id === req.user.id) {
+    throw new ApiError(400, 'Cannot follow yourself');
+  }
+
   const target = await User.findById(req.params.id);
   const me = await User.findById(req.user.id);
- 
-  if (!target) throw new ApiError(404, 'User not found');
-  const already = me.following.includes(target._id);
+
+  if (!target) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  const alreadyFollowing =
+    me.following.includes(target._id);
+
   if (
-  !already &&
-  me.blockedUsers.includes(target._id)
-) {
-  throw new ApiError(
-    400,
-    'Unblock user first'
-  );
+    !alreadyFollowing &&
+    me.blockedUsers.includes(target._id)
+  ) {
+    throw new ApiError(
+      400,
+      'Unblock user first'
+    );
+  }
+
+  if (
+    !alreadyFollowing &&
+    target.blockedUsers.includes(me._id)
+  ) {
+    throw new ApiError(
+      403,
+      'You are blocked'
+    );
+  }
+
+  // UNFOLLOW
+  if (alreadyFollowing) {
+
+    me.following.pull(target._id);
+    target.followers.pull(me._id);
+
+    await me.save();
+    await target.save();
+
+    return res.json({
+      success: true,
+      following: false
+    });
+
+  }
+
+  // PRIVATE ACCOUNT
+  if (target.isPrivate) {
+
+  if (!target.followRequests.includes(me._id)) {
+
+    target.followRequests.push(me._id);
+
+    await createNotification({
+      recipient: target._id,
+      sender: me._id,
+      type: 'follow_request'
+    });
+
+    await target.save();
+
+  }
+
+  return res.json({
+    success: true,
+    requested: true,
+    following: false
+  });
+
 }
 
-if (
-  !already &&
-  target.blockedUsers.includes(me._id)
-) {
-  throw new ApiError(
-    403,
-    'You are blocked'
-  );
-}
-  if (already) {
-    me.following.pull(target._id); target.followers.pull(me._id);
-  } else {
-    me.following.push(target._id); target.followers.push(me._id);
-    await createNotification({ recipient: target._id, sender: me._id, type: 'follow' });
-  }
-  await me.save(); await target.save();
-  res.json({ success: true, following: !already });
+  // PUBLIC ACCOUNT
+  me.following.push(target._id);
+  target.followers.push(me._id);
+
+  await createNotification({
+    recipient: target._id,
+    sender: me._id,
+    type: 'follow'
+  });
+
+  await me.save();
+  await target.save();
+
+  res.json({
+    success: true,
+    following: true
+  });
+
 });
 
+export const acceptFollowRequest =
+  asyncHandler(async (req, res) => {
+
+    const me = await User.findById(req.user.id);
+
+    const requester = await User.findById(
+      req.params.id
+    );
+
+    if (!requester) {
+      throw new ApiError(
+        404,
+        'User not found'
+      );
+    }
+
+    me.followRequests.pull(requester._id);
+
+    if (!me.followers.includes(requester._id)) {
+      me.followers.push(requester._id);
+    }
+
+    if (!requester.following.includes(me._id)) {
+      requester.following.push(me._id);
+    }
+
+    await me.save();
+    await requester.save();
+
+    await Notification.deleteOne({
+      recipient: me._id,
+      sender: requester._id,
+      type: 'follow_request'
+    });
+
+    await createNotification({
+      recipient: requester._id,
+      sender: me._id,
+      type: 'follow'
+    });
+
+    res.json({
+      success: true
+    });
+
+});
+
+export const rejectFollowRequest =
+  asyncHandler(async (req, res) => {
+
+    const me = await User.findById(req.user.id);
+
+    me.followRequests.pull(
+      req.params.id
+    );
+
+    await me.save();
+
+    await Notification.deleteOne({
+      recipient: me._id,
+      sender: req.params.id,
+      type: 'follow_request'
+    });
+
+    res.json({
+      success: true
+    });
+
+});
+
+export const cancelFollowRequest =
+  asyncHandler(async (req, res) => {
+
+    const target = await User.findById(
+      req.params.id
+    );
+
+    if (!target) {
+      throw new ApiError(
+        404,
+        'User not found'
+      );
+    }
+
+    target.followRequests.pull(
+      req.user.id
+    );
+
+    await target.save();
+
+    await Notification.deleteOne({
+      recipient: target._id,
+      sender: req.user.id,
+      type: 'follow_request'
+    });
+
+    res.json({
+      success: true
+    });
+
+});
 export const toggleBlockUser =
   asyncHandler(async (req, res) => {
 

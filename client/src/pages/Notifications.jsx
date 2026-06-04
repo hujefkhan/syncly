@@ -4,10 +4,12 @@ import api from '../lib/api';
 import Avatar from '../components/Avatar';
 import { getSocket } from '../lib/socket';
 
+
 const verb = (t) => ({
   like: 'liked your post',
   comment: 'commented on your post',
   follow: 'followed you',
+  follow_request: 'requested to follow you',
   mention: 'mentioned you',
   message: 'sent you a message'
 }[t] || 'updated');
@@ -75,7 +77,10 @@ export default function Notifications() {
           key={n._id}
           onClick={() => {
 
-            if (n.type === 'follow') {
+           if (
+  n.type === 'follow' ||
+  n.type === 'follow_request'
+) {
 
               if (n.sender?.username) {
                 navigate(`/profile/${n.sender.username}`);
@@ -151,6 +156,59 @@ export default function Notifications() {
               </p>
 
             )}
+
+
+            {n.type === 'follow_request' && (
+  <div className="flex gap-2 mt-3">
+
+    <button
+      onClick={async (e) => {
+        e.stopPropagation();
+
+        try {
+
+          await api.post(
+            `/users/${n.sender._id}/accept-request`
+          );
+
+          setItems(prev =>
+            prev.filter(item => item._id !== n._id)
+          );
+
+        } catch (err) {
+          console.error(err);
+        }
+      }}
+      className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm"
+    >
+      Accept
+    </button>
+
+    <button
+      onClick={async (e) => {
+        e.stopPropagation();
+
+        try {
+
+          await api.post(
+            `/users/${n.sender._id}/reject-request`
+          );
+
+          setItems(prev =>
+            prev.filter(item => item._id !== n._id)
+          );
+
+        } catch (err) {
+          console.error(err);
+        }
+      }}
+      className="px-3 py-1 rounded-lg border border-zinc-300 dark:border-zinc-700 text-sm"
+    >
+      Reject
+    </button>
+
+  </div>
+)}
 
           </div>
 

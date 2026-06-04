@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Shield } from "lucide-react";
 import api from '../lib/api';
 import Avatar from '../components/Avatar';
 import PostCard from '../components/PostCard';
@@ -17,11 +18,14 @@ const [savedPosts, setSavedPosts] = useState([]);
 const [taggedPosts, setTaggedPosts] = useState([]);
 const [activeTab, setActiveTab] = useState('posts');
   const [following, setFollowing] = useState(false);
+  const [requested, setRequested] = useState(false);
+  
   const [blocked, setBlocked] = useState(false);
   const [showFollowers, setShowFollowers] = useState(false);
 
 const [showFollowing, setShowFollowing] = useState(false);
 const [mediaViewer, setMediaViewer] = useState(null);
+
 const isCozy =
   localStorage.getItem('colorTheme') === 'cozy';
 
@@ -36,7 +40,17 @@ const isCozy =
 
   return;
 }
-      setFollowing(r.data.user.followers.some(f => f._id === me?._id));
+     setFollowing(
+  r.data.user.followers.some(
+    f => f._id === me?._id
+  )
+);
+
+setRequested(
+  r.data.user.followRequests?.includes(
+    me?._id
+  ) || false
+);
       setBlocked(
   me?.blockedUsers?.includes(
     r.data.user._id
@@ -58,10 +72,31 @@ const isCozy =
     });
   }, [username]);
 
-  const follow = async () => {
-    const { data } = await api.post(`/users/${user._id}/follow`);
-    setFollowing(data.following);
-  };
+const follow = async () => {
+
+  if (requested) {
+
+    await api.post(
+      `/users/${user._id}/cancel-request`
+    );
+
+    setRequested(false);
+
+    return;
+
+  }
+
+  const { data } = await api.post(
+    `/users/${user._id}/follow`
+  );
+
+  setFollowing(data.following || false);
+
+  if (data.requested) {
+    setRequested(true);
+  }
+
+};
   
 const logout = async () => {
   try {
@@ -78,6 +113,10 @@ const logout = async () => {
 };
   if (!user) return <div className="card p-10 text-center">Loading…</div>;
   const isMe = me?._id === user._id;
+  const canViewPrivateContent =
+  isMe ||
+  !user.isPrivate ||
+  following;
   const isAdmin = me?.role === 'admin';
 
 
@@ -120,7 +159,7 @@ const logout = async () => {
 
 </div>
         <div className="px-6 pb-6 -mt-12">
-          <div className="flex items-end justify-between">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div
   className="w-24 h-24 rounded-full ring-4 ring-white bg-white overflow-hidden cursor-pointer"
   onClick={() => {
@@ -132,14 +171,22 @@ const logout = async () => {
               <Avatar src={user.avatar} name={user.fullName || user.username} size={96}/>
             </div>
 
-         <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-2 w-full md:flex md:w-auto">
   {!isMe ? (
     <>
       <button
         onClick={follow}
-        className={following ? 'btn-outline' : 'btn-primary'}
+       className={`${
+  following ? 'btn-outline' : 'btn-primary'
+} flex-1 md:flex-none`}
       >
-        {following ? 'Following' : 'Follow'}
+       {
+  following
+    ? 'Following'
+    : requested
+    ? 'Requested'
+    : 'Follow'
+}
       </button>
 
       {following && user.following?.some(f => f._id === me?._id) && (
@@ -180,7 +227,8 @@ const logout = async () => {
     }
 
   }}
-  className="btn-outline text-red-500"
+
+  className="btn-outline text-red-500 flex-1 md:flex-none"
 >
   {blocked ? 'Unblock' : 'Block'}
 </button>
@@ -210,7 +258,7 @@ const logout = async () => {
       }
 
     }}
-    className="btn-outline text-red-600"
+   className="btn-outline text-red-600 flex-1 md:flex-none"
   >
     {user.isBanned
       ? 'Unban User'
@@ -315,6 +363,8 @@ const logout = async () => {
 
   )}
 
+ {canViewPrivateContent && (
+
   <button
     onClick={() => setActiveTab('tagged')}
     className={`px-5 py-2 rounded-xl font-medium transition ${
@@ -327,12 +377,47 @@ const logout = async () => {
   >
     Tagged
   </button>
+  )}
 
 </div>
 
-      <div className="space-y-5">
+     <div className="space-y-5">
+{!canViewPrivateContent && (
+  <div className="card p-10 text-center">
+    <div className="flex flex-col items-center py-10">
 
-  {activeTab === 'posts' && (
+      <div
+  className={`mb-4 rounded-full p-4 border ${
+    isCozy
+      ? "bg-blue-500/10 border-blue-500/20"
+      : "bg-violet-500/10 border-violet-500/20"
+  }`}
+>
+  <Shield
+    className={`w-8 h-8 ${
+      isCozy
+        ? "text-blue-400"
+        : "text-violet-400"
+    }`}
+    strokeWidth={1.8}
+  />
+</div>
+
+    <h2 className="text-2xl font-semibold text-zinc-900 dark:text-white">
+        This Account Is Private
+      </h2>
+
+      <p className="mt-3 text-center text-zinc-400 max-w-md">
+        Follow this account to see their photos,
+        videos, stories and tagged posts.
+      </p>
+
+    </div>
+  </div>
+)}
+
+  {activeTab === 'posts' &&
+    canViewPrivateContent && (
 
     <>
       {posts.length === 0 && (
@@ -385,7 +470,9 @@ const logout = async () => {
     </>
 
   )}
-{activeTab === 'tagged' && (
+  
+{activeTab === 'tagged' &&
+  canViewPrivateContent && (
 
   <>
 

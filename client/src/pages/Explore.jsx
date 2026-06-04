@@ -234,7 +234,7 @@ const isCozy =
 
 {showFilters && (
 
-  <div className="absolute right-0 top-14 bg-white dark:bg-zinc-900 border dark:border-zinc-700 rounded-2xl shadow-xl p-2 w-44 z-50">
+  <div className="absolute left-0 md:left-auto md:right-0 top-14 bg-white dark:bg-zinc-900 border dark:border-zinc-700 rounded-2xl shadow-xl p-2 w-44 z-50">
 
     <button
       onClick={() => {

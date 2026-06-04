@@ -94,7 +94,11 @@ const tokensFor = (user) => {
   avatar: user.avatar,
   bio: user.bio,
   role: user.role,
-  isBanned: user.isBanned
+  isBanned: user.isBanned,
+  isPrivate: user.isPrivate,
+  followRequests: user.followRequests || [],
+  followers: user.followers || [],
+  following: user.following || []
 },
   };
 };

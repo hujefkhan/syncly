@@ -26,10 +26,32 @@ export const initSocket = (server) => {
     socket.join(`user:${uid}`);
     await User.findByIdAndUpdate(uid, { isOnline: true, lastActive: new Date() });
     io.emit('presence:update', { userId: uid, isOnline: true });
-
     socket.on('typing', ({ conversationId, to }) => {
-      io.to(`user:${to}`).emit('typing', { conversationId, from: uid });
-    });
+
+  io.to(`user:${to}`).emit(
+    'typing',
+    {
+      conversationId,
+      from: uid
+    }
+  );
+
+});
+
+socket.on(
+  'typing:stop',
+  ({ conversationId, to }) => {
+
+    io.to(`user:${to}`).emit(
+      'typing:stop',
+      {
+        conversationId,
+        from: uid
+      }
+    );
+
+  }
+);
     socket.on('message:seen', ({ conversationId, to }) => {
       io.to(`user:${to}`).emit('message:seen', { conversationId, by: uid });
     });

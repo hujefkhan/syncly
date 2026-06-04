@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams,   Link } from 'react-router-dom';
+import { useParams,   Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import Avatar from '../components/Avatar';
 import { getSocket } from '../lib/socket';
 import { useAuth } from '../store/auth';
-import { Send } from 'lucide-react';
+import { Send, Music2 } from 'lucide-react';
 import {
   Pencil,
   ImageIcon,
@@ -15,12 +15,14 @@ import {
 } from 'lucide-react';
 export default function Messages() {
   const me = useAuth(s => s.user);
+  const navigate = useNavigate();
   const { conversationId } = useParams();
   const [convs, setConvs] = useState([]);
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [typing, setTyping] = useState(null);
+  const typingTimeout = useRef(null);
   const [replyingTo, setReplyingTo] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [mediaFile, setMediaFile] = useState(null);
@@ -121,10 +123,35 @@ useEffect(() => {
     });
   }
 });
-    s?.on('typing', ({ conversationId, from }) => {
-      if (conversationId === active._id) { setTyping(from); setTimeout(()=>setTyping(null), 1500); }
-    });
-    return () => { s?.off('message:new'); s?.off('typing'); };
+   s?.on('typing', ({ conversationId }) => {
+
+  if (
+    conversationId === active._id
+  ) {
+    setTyping(true);
+  }
+
+});
+
+s?.on(
+  'typing:stop',
+  ({ conversationId }) => {
+
+    if (
+      conversationId === active._id
+    ) {
+      setTyping(false);
+    }
+
+  }
+);
+   return () => {
+
+  s?.off('message:new');
+  s?.off('typing');
+  s?.off('typing:stop');
+
+};
   }, [active]);
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: 1e9, behavior:'smooth' }); }, [messages]);
@@ -185,13 +212,40 @@ setMediaFile(null);
 setUploadingMedia(false);
 setReplyingTo(null);
   };
+const onType = (e) => {
 
-  const onType = (e) => {
-    setText(e.target.value);
-    const other = active?.participants.find(p => p._id !== me._id);
-    getSocket()?.emit('typing', { conversationId: active._id, to: other?._id });
-  };
+  setText(e.target.value);
 
+  if (!active) return;
+
+  const other =
+    active.participants.find(
+      p => p._id !== me._id
+    );
+
+  getSocket()?.emit('typing', {
+    conversationId: active._id,
+    to: other?._id
+  });
+
+  clearTimeout(
+    typingTimeout.current
+  );
+
+  typingTimeout.current =
+    setTimeout(() => {
+
+      getSocket()?.emit(
+        'typing:stop',
+        {
+          conversationId: active._id,
+          to: other?._id
+        }
+      );
+
+    }, 1200);
+
+};
   return (
    <div className="card flex h-[75vh] overflow-hidden">
     <aside
@@ -382,17 +436,28 @@ setReplyingTo(null);
       : (o?.fullName || o?.username);
 
     return (
+<div
+  onClick={() => {
 
-     <div
-  onClick={() =>
-    active.isGroup &&
-    setShowGroupInfo(true)
-  }
-  className={`flex items-center gap-3 rounded-xl p-2 ${
-    active.isGroup
-      ? 'cursor-pointer hover:bg-brand-50 dark:hover:bg-zinc-800'
-      : ''
-  }`}
+    if (active.isGroup) {
+
+      setShowGroupInfo(true);
+
+    } else {
+
+      const other =
+        active.participants.find(
+          p => p._id !== me._id
+        );
+
+      if (other?.username) {
+        navigate(`/profile/${other.username}`);
+      }
+
+    }
+
+  }}
+  className="flex items-center gap-3 rounded-xl p-2 cursor-pointer hover:bg-brand-50 dark:hover:bg-zinc-800"
 >
        <Avatar
   src={
@@ -536,15 +601,44 @@ setReplyingTo(null);
     className="bg-white/10 border border-white/10 rounded-2xl overflow-hidden w-64 block hover:opacity-90 transition"
   >
 
-    {!!m.sharedPost.images?.[0]?.url && (
+   {m.sharedPost.images?.[0]?.url && (
 
-      <img
-        src={m.sharedPost.images[0].url}
-        alt=""
-        className="w-full h-44 object-cover"
-      />
+  m.sharedPost.type === 'audio' ? (
 
-    )}
+   <div className="h-44 flex flex-col items-center justify-center bg-zinc-900 text-white">
+  <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3">
+    <Music2 size={24} />
+  </div>
+
+  <div className="text-sm font-semibold">
+    Audio Post
+  </div>
+
+  <div className="text-xs text-zinc-400 mt-1">
+    Tap to view
+  </div>
+</div>
+
+  ) : m.sharedPost.type === 'reel' ? (
+
+    <video
+      src={m.sharedPost.images[0].url}
+      className="w-full h-44 object-cover"
+      muted
+      playsInline
+    />
+
+  ) : (
+
+    <img
+      src={m.sharedPost.images[0].url}
+      alt=""
+      className="w-full h-44 object-cover"
+    />
+
+  )
+
+)}
 
     <div className="p-3">
 
@@ -634,7 +728,13 @@ setReplyingTo(null);
     </div>
   </div>
 ))}
-             {typing && <div className="text-xs text-ink/40 italic">typing…</div>}
+             {typing && (
+
+ <div className="text-sm text-zinc-500 dark:text-zinc-400 italic px-3 pb-2">
+  Typing...
+</div>
+
+)}
             </div>
            <div className="border-t border-brand-50 dark:border-zinc-800 p-3 space-y-2">
 

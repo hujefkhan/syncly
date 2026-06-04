@@ -10,6 +10,11 @@ r.patch('/me/username', protect, c.changeUsername);
 r.delete('/me', protect, c.deleteAccount);
 r.patch('/me/profile', protect, c.updateProfile);
 r.post('/:id/follow', protect, c.followUser);
+r.post(
+  '/:id/cancel-request',
+  protect,
+  c.cancelFollowRequest
+);
 r.post('/:id/block', protect, c.toggleBlockUser);
 r.post('/save/:postId', protect, c.savePost);
 r.get('/explore/people', protect, c.explorePeople);
@@ -30,6 +35,17 @@ r.get(
   '/following',
   protect,
   c.getMutualFollowers
+);
+r.post(
+  '/:id/accept-request',
+  protect,
+  c.acceptFollowRequest
+);
+
+r.post(
+  '/:id/reject-request',
+  protect,
+  c.rejectFollowRequest
 );
 r.get('/:username', protect, c.getProfile);
 export default r;
